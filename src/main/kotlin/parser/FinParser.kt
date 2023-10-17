@@ -88,7 +88,7 @@ class FinParser : Parser {
         val parsableAmount = splitAmount[0].replace(",", ".")
 
         return Entry(
-            parsableAmount.toFloat(),
+            parsableAmount.toDouble(),
             plain.type,
             plain.description,
             plain.instance
@@ -111,7 +111,7 @@ class FinParser : Parser {
 
         return DayBalance(
             LocalDate.parse(parsableDate, DateTimeFormatter.ofPattern("dd.MM.yyyy")),
-            parableBalance.toFloat(),
+            parableBalance.toDouble(),
             plain.entries.map { getEntryFromPlain(it, dayBalanceString) }
         )
     }

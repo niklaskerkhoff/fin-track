@@ -10,6 +10,7 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.*
 import kotlin.math.abs
+import kotlin.math.max
 
 fun String.toAmount(): String {
     val split = this.split(".")
@@ -30,6 +31,8 @@ fun String.toAmount(): String {
     }
     return first
 }
+
+fun Double.toAmount() = this.toString().toAmount()
 
 var dayBalancesState = emptyList<DayBalance>()
 
@@ -70,7 +73,7 @@ fun readDayBalancesState() {
 
 fun checkBalanceAmountDifferences() {
     for (i in 0..dayBalancesState.size - 2) {
-        val amountSum = dayBalancesState[i].entries.fold(0F) { acc, entry -> acc + entry.amount }
+        val amountSum = dayBalancesState[i].entries.fold(0.0) { acc, entry -> acc + entry.amount }
         val balanceDifference = dayBalancesState[i].balance - dayBalancesState[i + 1].balance
 
         if (abs(balanceDifference - amountSum) > 0.1F) {
@@ -102,16 +105,6 @@ fun executeNew() {
     }
 }
 
-fun getMonthNumberString(month: Int): String {
-    if (month < 10) {
-        return "0$month"
-    }
-    return month.toString()
-}
-
-fun getWhitespaces(n: Int): String {
-    return (1..n).joinToString("") { " " }
-}
 
 data class MonthSummaryOutput(
     val month: String,
@@ -124,69 +117,43 @@ fun printMonthSummaryOutput(m: MonthSummaryOutput) {
     println("| ${m.month} | ${m.start} | ${m.end} | ${m.difference} |")
 }
 
-fun executeSum() {
-    if (dayBalancesState.isEmpty()) {
-        println("No Entries")
-        return
-    }
+fun executeOverview() {
+    val overview = getAllOverviews(dayBalancesState)
 
-    val monthSummaries = mutableListOf<MonthSummaryOutput>()
+    overview.forEach { month ->
+        val header =
+            "${month.month} | start: ${month.start.toAmount()} | end: ${month.end.toAmount()} | diff: ${(month.end - month.start).toAmount()}"
+        println(header)
+        val outputEntries = month.entries.mapValues { it.value.toAmount() }
+        val maxInstanceLength = outputEntries.maxOf { it.key.length }
+        val maxAmountLength = outputEntries.maxOf { it.value.length }
 
-    var month = dayBalancesState.first().date.monthValue
-    var balanceEnd = dayBalancesState.first().balance
+        val outputWidth = max(header.length, maxInstanceLength + maxAmountLength + 3)
+        println(getChars(outputWidth, '-'))
 
-    for (i in 1 until dayBalancesState.size) {
-        val currentMonth = dayBalancesState[i].date.monthValue
-        if (month != currentMonth) {
-            val balanceStart = dayBalancesState[i].balance
-            val difference = balanceEnd - balanceStart
-
-            monthSummaries.add(
-                MonthSummaryOutput(
-                    getMonthNumberString(month),
-                    balanceStart.toString().toAmount(),
-                    balanceEnd.toString().toAmount(),
-                    difference.toString().toAmount()
-                )
-            )
-            balanceEnd = balanceStart
-            month = currentMonth
+        outputEntries.forEach {
+            val instanceOutput = it.key + getChars(maxInstanceLength - it.key.length)
+            val amountOutput = getChars(maxAmountLength - it.value.length) + it.value
+            val line = "$instanceOutput | $amountOutput"
+            println(line)
         }
+
+        println()
     }
-
-    val maxStart = monthSummaries.maxBy { it.start.length }.start.length
-    val maxEnd = monthSummaries.maxBy { it.end.length }.end.length
-    val maxDifference = monthSummaries.maxBy { it.difference.length }.difference.length
-
-
-    val formattedMonthSummaries = monthSummaries.map {
-        MonthSummaryOutput(
-            it.month,
-            getWhitespaces(maxStart - it.end.length) + it.start,
-            getWhitespaces(maxEnd - it.end.length) + it.end,
-            getWhitespaces(maxDifference - it.difference.length) + it.difference,
-        )
-    }
-
-    printMonthSummaryOutput(
-        MonthSummaryOutput(
-            "  ",
-            "Start" + getWhitespaces(maxStart - 5),
-            "End" + getWhitespaces(maxEnd - 3),
-            "Diff" + getWhitespaces(maxDifference - 4)
-        )
-    )
-    formattedMonthSummaries.forEach(::printMonthSummaryOutput)
 }
 
 fun executeCommand(command: String) {
-    if (command == "new") {
+    if (command.matches(Regex("^new${'$'}"))) {
         executeNew()
-    } else if (command == "sum") {
+    } else if (command.matches(Regex("^sum${'$'}"))) {
         executeSum()
+    } else if (command.matches(Regex("^print${'$'}"))) {
+        executePrint()
+    } else if (command.matches(Regex("^overview${'$'}"))) {
+        executeOverview()
     }
-}
 
+}
 
 fun main() = try {
 

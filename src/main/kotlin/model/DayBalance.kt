@@ -17,7 +17,7 @@ data class PlainDayBalance(
 )
 
 data class Entry(
-    val amount: Float,
+    val amount: Double,
     val type: String,
     val description: String,
     val instance: String
@@ -26,6 +26,13 @@ data class Entry(
 
 data class DayBalance(
     val date: LocalDate,
-    val balance: Float,
+    val balance: Double,
     val entries: List<Entry>
+)
+
+data class DayBalancesOverview(
+    val month: Int,
+    val start: Double,
+    val end: Double,
+    val entries: Map<String, Double>
 )
